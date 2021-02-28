@@ -9,12 +9,46 @@ import 'package:flutter/material.dart';
 //       textDirection: TextDirection.ltr,
 //     )));
 
+// void main() {
+//   runApp(MaterialApp(
+//       title: 'My app',
+//       home: SafeArea(
+//         child: MyScafforld(),
+//       )));
+// }
+
 void main() {
   runApp(MaterialApp(
-      title: 'My app',
-      home: SafeArea(
-        child: MyScafforld(),
-      )));
+    title: 'Flutter Tutorial',
+    home: TutorialHome(),
+  ));
+}
+
+class TutorialHome extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+            icon: Icon(Icons.menu),
+            tooltip: 'Navigation menu',
+            onPressed: null),
+        title: Text('Example title'),
+        actions: <Widget>[
+          IconButton(
+              icon: Icon(Icons.search), tooltip: 'Search', onPressed: null)
+        ],
+      ),
+      body: Center(
+        child: Text('Hello, world!'),
+      ),
+      floatingActionButton: FloatingActionButton(
+        tooltip: 'Add',
+        child: Icon(Icons.add),
+        onPressed: null,
+      ),
+    );
+  }
 }
 
 class MyAppBar extends StatelessWidget {
