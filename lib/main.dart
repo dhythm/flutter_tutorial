@@ -71,7 +71,7 @@ class BookRouteInfomationParser extends RouteInformationParser<BookRoutePath> {
 
 class BookRouteDelegate extends RouterDelegate<BookRoutePath>
     with ChangeNotifier, PopNavigatorRouterDelegateMixin<BookRoutePath> {
-  final GlobalKey<NavigatorState> navigatroKey;
+  final GlobalKey<NavigatorState> navigatorKey;
 
   Book _selectedBook;
   bool show404 = false;
@@ -82,7 +82,7 @@ class BookRouteDelegate extends RouterDelegate<BookRoutePath>
     Book('Fahrenheit 451', 'Ray Bradbury'),
   ];
 
-  BookRouteDelegate() : navigatroKey = GlobalKey<NavigatorState>();
+  BookRouteDelegate() : navigatorKey = GlobalKey<NavigatorState>();
 
   BookRoutePath get currentConfiguration {
     if (show404) {
