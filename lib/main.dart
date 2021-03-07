@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_tutorial/navigator_1.dart';
 
 void main() {
   runApp(BooksApp());
@@ -18,51 +17,137 @@ class BooksApp extends StatefulWidget {
 }
 
 class _BooksAppState extends State<BooksApp> {
-  void initState() {
-    super.initState();
+  BookRouteDelegate _routerDelegate = BookRouteDelegate();
+  BookRouteInfomationParser _routeInformationParser =
+      BookRouteInfomationParser();
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp.router(
+      routeInformationParser: _routeInformationParser,
+      routerDelegate: _routerDelegate,
+      title: 'Books App',
+    );
   }
+}
+
+class BookRouteInfomationParser extends RouteInformationParser<BookRoutePath> {
+  @override
+  Future<BookRoutePath> parseRouteInformation(
+      RouteInformation routeInformation) async {
+    final uri = Uri.parse(routeInformation.location);
+    // Handle '/'
+    if (uri.pathSegments.length == 0) {
+      return BookRoutePath.home();
+    }
+
+    // Handle '/book/:id'
+    if (uri.pathSegments.length == 2) {
+      if (uri.pathSegments[0] != 'book') return BookRoutePath.unknown();
+      var remaining = uri.pathSegments[1];
+      var id = int.tryParse(remaining);
+      if (id == null) return BookRoutePath.unknown();
+      return BookRoutePath.details(id);
+    }
+
+    //Handle unknown routes
+    return BookRoutePath.unknown();
+  }
+
+  @override
+  RouteInformation restoreRouteInformation(BookRoutePath path) {
+    if (path.isUnknown) {
+      return RouteInformation(location: '/404');
+    }
+    if (path.isHomePage) {
+      return RouteInformation(location: '/');
+    }
+    if (path.isDetailsPage) {
+      return RouteInformation(location: '/book/${path.id}');
+    }
+    return null;
+  }
+}
+
+class BookRouteDelegate extends RouterDelegate<BookRoutePath>
+    with ChangeNotifier, PopNavigatorRouterDelegateMixin<BookRoutePath> {
+  final GlobalKey<NavigatorState> navigatroKey;
 
   Book _selectedBook;
   bool show404 = false;
+
   List<Book> books = [
     Book('Stranger in a Strange Land', 'Rovert A. Heinlein'),
     Book('Foundation', 'Isaac Asimov'),
     Book('Fahrenheit 451', 'Ray Bradbury'),
   ];
 
+  BookRouteDelegate() : navigatroKey = GlobalKey<NavigatorState>();
+
+  BookRoutePath get currentConfiguration {
+    if (show404) {
+      return BookRoutePath.unknown();
+    }
+    return _selectedBook == null
+        ? BookRoutePath.home()
+        : BookRoutePath.details(books.indexOf(_selectedBook));
+  }
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-        title: 'Books App',
-        home: Navigator(
-          pages: [
-            MaterialPage(
-                child:
-                    BooksListScreen(books: books, onTapped: _handleBookTapped),
-                key: ValueKey('BooksListPage')),
-            // if (show404)
-            //   MaterialPage(key: ValueKey('UnknownPage'), child: UnknownScreen())
-            // else if (_selectedBook != null)
-            if (_selectedBook != null) BookDetailsPage(book: _selectedBook),
-          ],
-          onPopPage: (route, result) {
-            if (!route.didPop(result)) {
-              return false;
-            }
+    return Navigator(
+        key: navigatorKey,
+        pages: [
+          MaterialPage(
+              child: BooksListScreen(
+                books: books,
+                onTapped: _handleBookTapped,
+              ),
+              key: ValueKey('BooksListPage')),
+          if (show404)
+            MaterialPage(child: UnknownScreen(), key: ValueKey('UnknownPage'))
+          else if (_selectedBook != null)
+            BookDetailsPage(book: _selectedBook)
+        ],
+        onPopPage: (route, result) {
+          if (!route.didPop(result)) {
+            return false;
+          }
 
-            setState(() {
-              _selectedBook = null;
-            });
+          // Update the list of pages by setting _selectedBook to null
+          _selectedBook = null;
+          show404 = false;
+          notifyListeners();
 
-            return true;
-          },
-        ));
+          return true;
+        });
+  }
+
+  @override
+  Future<void> setNewRoutePath(BookRoutePath path) async {
+    if (path.isUnknown) {
+      _selectedBook = null;
+      show404 = true;
+      return;
+    }
+
+    if (path.isDetailsPage) {
+      if (path.id < 0 || path.id > books.length - 1) {
+        show404 = true;
+        return;
+      }
+
+      _selectedBook = books[path.id];
+    } else {
+      _selectedBook = null;
+    }
+
+    show404 = false;
   }
 
   void _handleBookTapped(Book book) {
-    setState(() {
-      _selectedBook = book;
-    });
+    _selectedBook = book;
+    notifyListeners();
   }
 }
 
@@ -94,17 +179,30 @@ class BookDetailsPage extends Page {
   BookDetailsPage({this.book}) : super(key: ValueKey(book));
 
   Route createRoute(BuildContext context) {
-    return PageRouteBuilder(
-        settings: this,
-        pageBuilder: (context, animation, animation2) {
-          final tween = Tween(begin: Offset(0.0, 1.0), end: Offset.zero);
-          final curveTween = CurveTween(curve: Curves.easeInOut);
-          return SlideTransition(
-            position: animation.drive(curveTween).drive(tween),
-            child: BookDetailsScreen(book: book),
-          );
-        });
+    return MaterialPageRoute(
+        builder: (BuildContext context) {
+          return BookDetailsScreen(book: book);
+        },
+        settings: this);
   }
+}
+
+class BookRoutePath {
+  final int id;
+  final bool isUnknown;
+
+  BookRoutePath.home()
+      : id = null,
+        isUnknown = false;
+
+  BookRoutePath.details(this.id) : isUnknown = false;
+
+  BookRoutePath.unknown()
+      : id = null,
+        isUnknown = true;
+
+  bool get isHomePage => id == null;
+  bool get isDetailsPage => id != null;
 }
 
 class BookDetailsScreen extends StatelessWidget {
@@ -135,104 +233,13 @@ class BookDetailsScreen extends StatelessWidget {
   }
 }
 
-class BookRoutePath {
-  final int id;
-  final bool isUnknown;
-
-  BookRoutePath.home()
-      : id = null,
-        isUnknown = false;
-
-  BookRoutePath.details(this.id) : isUnknown = false;
-
-  BookRoutePath.unknown()
-      : id = null,
-        isUnknown = true;
-
-  bool get isHomePage => id == null;
-  bool get isDetailsPage => id != null;
-}
-
-class BookRouteDelegate extends RouterDelegate<BookRoutePath>
-    with ChangeNotifier, PopNavigatorRouterDelegateMixin<BookRoutePath> {
-  final GlobalKey<NavigatorState> navigatroKey;
-
-  Book _selectedBook;
-  bool show404 = false;
-
-  List<Book> books = [
-    Book('Stranger in a Strange Land', 'Rovert A. Heinlein'),
-    Book('Foundation', 'Isaac Asimov'),
-    Book('Fahrenheit 451', 'Ray Bradbury'),
-  ];
-
-  BookRouteDelegate() : navigatroKey = GlobalKey<NavigatorState>();
-
-  BookRoutePath get currentConfiguration {
-    if (show404) {
-      return BookRoutePath.unknown();
-    }
-
-    return _selectedBook == null
-        ? BookRoutePath.home()
-        : BookRoutePath.details(books.indexOf(_selectedBook));
-  }
-
+class UnknownScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Navigator(
-        key: navigatorKey,
-        pages: [
-          MaterialPage(
-              child: BooksListScreen(
-                books: books,
-                onTapped: _handleBookTapped,
-              ),
-              key: ValueKey('BooksListPage')),
-          if (show404)
-            MaterialPage(child: UnknownScreen(), key: ValueKey('UnknownPage'))
-          else if (_selectedBook != null)
-            BookDetailsPage(book: _selectedBook)
-        ],
-        onPopPage: (route, result) {
-          if (!route.didPop(result)) {
-            return false;
-          }
-          _selectedBook = null;
-          show404 = false;
-          notifyListeners();
-
-          return true;
-        });
-  }
-
-  void _handleBookTapped(Book book) {
-    _selectedBook = book;
-    notifyListeners();
-  }
-
-  @override
-  GlobalKey<NavigatorState> get navigatorKey => throw UnimplementedError();
-
-  @override
-  Future<void> setNewRoutePath(BookRoutePath path) async {
-    if (path.isUnknown) {
-      _selectedBook = null;
-      show404 = true;
-      return;
-    }
-
-    if (path.isDetailsPage) {
-      if (path.id < 0 || path.id > books.length - 1) {
-        show404 = true;
-        return;
-      }
-
-      _selectedBook = books[path.id];
-    } else {
-      _selectedBook = null;
-    }
-
-    show404 = false;
+    return Scaffold(
+        appBar: AppBar(),
+        body: Center(
+          child: Text('404!'),
+        ));
   }
 }
