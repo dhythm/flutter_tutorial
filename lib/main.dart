@@ -8,7 +8,10 @@ class Nav2App extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: HomeScreen(),
+      routes: {
+        '/': (context) => HomeScreen(),
+        '/details': (context) => DetailScreen()
+      },
     );
   }
 }
@@ -22,9 +25,7 @@ class HomeScreen extends StatelessWidget {
           child: TextButton(
             child: Text('View Details'),
             onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) {
-                return DetailScreen();
-              }));
+              Navigator.pushNamed(context, '/details');
             },
           ),
         ));
@@ -46,16 +47,3 @@ class DetailScreen extends StatelessWidget {
         ));
   }
 }
-
-// class MyApp extends StatelessWidget {
-//   @override
-//   Widget build(BuildContext context) {
-//     return MaterialApp(
-//         title: 'Flutter Demo',
-//         theme: ThemeData(
-//           primarySwatch: Colors.blue,
-//           visualDensity: VisualDensity.adaptivePlatformDensity,
-//         ),
-//         home: MyHomePage(title: 'FlutterDemo Home Page'));
-//   }
-// }
