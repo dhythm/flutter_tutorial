@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_tutorial/navigator_1.dart';
 
 void main() {
   runApp(BooksApp());
@@ -40,14 +39,22 @@ class _BooksAppState extends State<BooksApp> {
                 child:
                     BooksListScreen(books: books, onTapped: _handleBookTapped),
                 key: ValueKey('BooksListPage')),
-            if (show404)
-              MaterialPage(key: ValueKey('UnknownPage'), child: UnknownScreen())
-            else if (_selectedBook != null)
-              MaterialPage(
-                  child: BookDetailsScreen(book: _selectedBook),
-                  key: ValueKey(_selectedBook))
+            // if (show404)
+            //   MaterialPage(key: ValueKey('UnknownPage'), child: UnknownScreen())
+            // else if (_selectedBook != null)
+            if (_selectedBook != null) BookDetailsPage(book: _selectedBook),
           ],
-          // onPopPage: (route, result) => route.didPop(result),
+          onPopPage: (route, result) {
+            if (!route.didPop(result)) {
+              return false;
+            }
+
+            setState(() {
+              _selectedBook = null;
+            });
+
+            return true;
+          },
         ));
   }
 
@@ -93,8 +100,36 @@ class BookDetailsPage extends Page {
           final curveTween = CurveTween(curve: Curves.easeInOut);
           return SlideTransition(
             position: animation.drive(curveTween).drive(tween),
-            child: BookDetailsScreen(key: ValueKey(book), book: book),
+            child: BookDetailsScreen(book: book),
           );
         });
+  }
+}
+
+class BookDetailsScreen extends StatelessWidget {
+  final Book book;
+
+  BookDetailsScreen({@required this.book});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(),
+      body: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (book != null) ...[
+              Text(book.title, style: Theme.of(context).textTheme.headline6),
+              Text(
+                book.author,
+                style: Theme.of(context).textTheme.subtitle1,
+              )
+            ]
+          ],
+        ),
+      ),
+    );
   }
 }
