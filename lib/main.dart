@@ -1,83 +1,100 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_tutorial/navigator_1.dart';
 
 void main() {
-  runApp(Nav2App());
+  runApp(BooksApp());
 }
 
-class Nav2App extends StatelessWidget {
+class Book {
+  final String title;
+  final String author;
+
+  Book(this.title, this.author);
+}
+
+class BooksApp extends StatefulWidget {
+  @override
+  State<StatefulWidget> createState() => _BooksAppState();
+}
+
+class _BooksAppState extends State<BooksApp> {
+  void initState() {
+    super.initState();
+  }
+
+  Book _selectedBook;
+  bool show404 = false;
+  List<Book> books = [
+    Book('Stranger in a Strange Land', 'Rovert A. Heinlein'),
+    Book('Foundation', 'Isaac Asimov'),
+    Book('Fahrenheit 451', 'Ray Bradbury'),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      onGenerateRoute: (settings) {
-        // Handle '/'
-        if (settings.name == '/') {
-          return MaterialPageRoute(builder: (context) => HomeScreen());
-        }
+        title: 'Books App',
+        home: Navigator(
+          pages: [
+            MaterialPage(
+                child:
+                    BooksListScreen(books: books, onTapped: _handleBookTapped),
+                key: ValueKey('BooksListPage')),
+            if (show404)
+              MaterialPage(key: ValueKey('UnknownPage'), child: UnknownScreen())
+            else if (_selectedBook != null)
+              MaterialPage(
+                  child: BookDetailsScreen(book: _selectedBook),
+                  key: ValueKey(_selectedBook))
+          ],
+          // onPopPage: (route, result) => route.didPop(result),
+        ));
+  }
 
-        // Handle '/details/:id'
-        var uri = Uri.parse(settings.name);
-        if (uri.pathSegments.length == 2 &&
-            uri.pathSegments.first == 'details') {
-          var id = uri.pathSegments[1];
-          return MaterialPageRoute(builder: (context) => DetailScreen(id: id));
-        }
-
-        return MaterialPageRoute(builder: (context) => UnknownScreen());
-      },
-    );
+  void _handleBookTapped(Book book) {
+    setState(() {
+      _selectedBook = book;
+    });
   }
 }
 
-class HomeScreen extends StatelessWidget {
+class BooksListScreen extends StatelessWidget {
+  final List<Book> books;
+  final ValueChanged<Book> onTapped;
+
+  BooksListScreen({@required this.books, @required this.onTapped});
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(),
-        body: Center(
-          child: TextButton(
-            child: Text('View Details'),
-            onPressed: () {
-              Navigator.pushNamed(context, '/details/1');
-            },
-          ),
+        body: ListView(
+          children: [
+            for (var book in books)
+              ListTile(
+                title: Text(book.title),
+                subtitle: Text(book.author),
+                onTap: () => onTapped(book),
+              )
+          ],
         ));
   }
 }
 
-class DetailScreen extends StatelessWidget {
-  final String id;
+class BookDetailsPage extends Page {
+  final Book book;
 
-  DetailScreen({this.id});
+  BookDetailsPage({this.book}) : super(key: ValueKey(book));
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-        appBar: AppBar(),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text('Viewing details for item $id'),
-              TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child: Text('Pop!'))
-            ],
-          ),
-        ));
-  }
-}
-
-class UnknownScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(),
-      body: Center(
-        child: Text('404!'),
-      ),
-    );
-    ;
+  Route createRoute(BuildContext context) {
+    return PageRouteBuilder(
+        settings: this,
+        pageBuilder: (context, animation, animation2) {
+          final tween = Tween(begin: Offset(0.0, 1.0), end: Offset.zero);
+          final curveTween = CurveTween(curve: Curves.easeInOut);
+          return SlideTransition(
+            position: animation.drive(curveTween).drive(tween),
+            child: BookDetailsScreen(key: ValueKey(book), book: book),
+          );
+        });
   }
 }
