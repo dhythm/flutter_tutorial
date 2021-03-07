@@ -1,7 +1,32 @@
+import 'dart:math';
+
 import 'package:flutter/animation.dart';
 import 'package:flutter/material.dart';
 
 void main() => runApp(LogoApp());
+
+class AnimatedLogo extends AnimatedWidget {
+  static final _opacityTween = Tween<double>(begin: 0.1, end: 1);
+  static final _sizeTween = Tween<double>(begin: 0, end: 300);
+
+  AnimatedLogo({Key key, Animation<double> animation})
+      : super(key: key, listenable: animation);
+
+  Widget build(BuildContext context) {
+    final animation = listenable as Animation<double>;
+    return Center(
+      child: Opacity(
+        opacity: _opacityTween.evaluate(animation),
+        child: Container(
+          margin: EdgeInsets.symmetric(vertical: 10),
+          height: _sizeTween.evaluate(animation),
+          width: _sizeTween.evaluate(animation),
+          child: FlutterLogo(),
+        ),
+      ),
+    );
+  }
+}
 
 class LogoApp extends StatefulWidget {
   @override
@@ -17,7 +42,7 @@ class _LogoAppState extends State<LogoApp> with SingleTickerProviderStateMixin {
     super.initState();
     controller =
         AnimationController(vsync: this, duration: const Duration(seconds: 2));
-    animation = Tween<double>(begin: 0, end: 300).animate(controller)
+    animation = CurvedAnimation(parent: controller, curve: Curves.easeIn)
       ..addStatusListener((status) {
         if (status == AnimationStatus.completed) {
           controller.reverse();
@@ -32,8 +57,7 @@ class _LogoAppState extends State<LogoApp> with SingleTickerProviderStateMixin {
   }
 
   @override
-  Widget build(BuildContext context) => GrowTransition(
-        child: LogoWidget(),
+  Widget build(BuildContext context) => AnimatedLogo(
         animation: animation,
       );
 
@@ -44,48 +68,36 @@ class _LogoAppState extends State<LogoApp> with SingleTickerProviderStateMixin {
   }
 }
 
-class LogoWidget extends StatelessWidget {
-  Widget build(BuildContext context) => Container(
-        margin: EdgeInsets.symmetric(vertical: 10),
-        child: FlutterLogo(),
-      );
-}
+// class LogoWidget extends StatelessWidget {
+//   Widget build(BuildContext context) => Container(
+//         margin: EdgeInsets.symmetric(vertical: 10),
+//         child: FlutterLogo(),
+//       );
+// }
 
-class GrowTransition extends StatelessWidget {
-  GrowTransition({this.child, this.animation});
+// class GrowTransition extends StatelessWidget {
+//   GrowTransition({this.child, this.animation});
 
-  final Widget child;
-  final Animation<double> animation;
+//   final Widget child;
+//   final Animation<double> animation;
 
+//   @override
+//   Widget build(BuildContext context) {
+//     return Center(
+//       child: AnimatedBuilder(
+//         animation: animation,
+//         builder: (context, child) => Container(
+//           height: animation.value,
+//           width: animation.value,
+//           child: child,
+//         ),
+//         child: child,
+//       ),
+//     );
+//   }
+// }
+
+class ShakeCurve extends Curve {
   @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: AnimatedBuilder(
-        animation: animation,
-        builder: (context, child) => Container(
-          height: animation.value,
-          width: animation.value,
-          child: child,
-        ),
-        child: child,
-      ),
-    );
-  }
-}
-
-class AnimatedLogo extends AnimatedWidget {
-  AnimatedLogo({Key key, Animation<double> animation})
-      : super(key: key, listenable: animation);
-
-  Widget build(BuildContext context) {
-    final animation = listenable as Animation<double>;
-    return Center(
-      child: Container(
-        margin: EdgeInsets.symmetric(vertical: 10),
-        height: animation.value,
-        width: animation.value,
-        child: FlutterLogo(),
-      ),
-    );
-  }
+  double transform(double t) => sin(t * pi * 2);
 }
