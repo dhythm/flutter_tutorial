@@ -17,12 +17,23 @@ class _LogoAppState extends State<LogoApp> with SingleTickerProviderStateMixin {
     super.initState();
     controller =
         AnimationController(vsync: this, duration: const Duration(seconds: 2));
-    animation = Tween<double>(begin: 0, end: 300).animate(controller);
+    animation = Tween<double>(begin: 0, end: 300).animate(controller)
+      ..addStatusListener((status) {
+        if (status == AnimationStatus.completed) {
+          controller.reverse();
+        } else if (status == AnimationStatus.dismissed) {
+          controller.forward();
+        }
+      })
+      ..addStatusListener((state) {
+        print('$state');
+      });
     controller.forward();
   }
 
   @override
-  Widget build(BuildContext context) => AnimatedLogo(
+  Widget build(BuildContext context) => GrowTransition(
+        child: LogoWidget(),
         animation: animation,
       );
 
@@ -30,6 +41,35 @@ class _LogoAppState extends State<LogoApp> with SingleTickerProviderStateMixin {
   void dispose() {
     controller.dispose();
     super.dispose();
+  }
+}
+
+class LogoWidget extends StatelessWidget {
+  Widget build(BuildContext context) => Container(
+        margin: EdgeInsets.symmetric(vertical: 10),
+        child: FlutterLogo(),
+      );
+}
+
+class GrowTransition extends StatelessWidget {
+  GrowTransition({this.child, this.animation});
+
+  final Widget child;
+  final Animation<double> animation;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: AnimatedBuilder(
+        animation: animation,
+        builder: (context, child) => Container(
+          height: animation.value,
+          width: animation.value,
+          child: child,
+        ),
+        child: child,
+      ),
+    );
   }
 }
 
